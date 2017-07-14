@@ -55,12 +55,12 @@ func TestCancelStructuresUnreliableAcrossGoroutines(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		tries          int
-		retries        int
-		selecter       func(ctx context.Context, jobs chan struct{}) bool
-		runner         func(cancel func(), jobs chan struct{})
 		inGoroutine    bool
 		expectReliable bool
+		selecter       func(ctx context.Context, jobs chan struct{}) bool
+		runner         func(cancel func(), jobs chan struct{})
+		tries          int
+		retries        int
 	}{
 		// ---------------------------------------------------
 		// Single-level selects are fairly reliably unreliable
@@ -69,19 +69,19 @@ func TestCancelStructuresUnreliableAcrossGoroutines(t *testing.T) {
 			name:           "Single-level cancel is unreliable",
 			inGoroutine:    true,
 			expectReliable: false,
-			tries:          10,
-			retries:        10,
 			selecter:       singleLevelSelect,
 			runner:         submitFirst,
+			tries:          10,
+			retries:        10,
 		},
 		{
 			name:           "Single-level cancel is unreliable, even when canceling first",
 			inGoroutine:    true,
 			expectReliable: false,
-			tries:          10,
-			retries:        10,
 			selecter:       singleLevelSelect,
 			runner:         cancelFirst,
+			tries:          10,
+			retries:        10,
 		},
 		// --------------------------------------------------------------------
 		// Nested selects are less likely to misbehave, allow trying more times
@@ -90,10 +90,10 @@ func TestCancelStructuresUnreliableAcrossGoroutines(t *testing.T) {
 			name:           "Nested cancel is unreliable",
 			inGoroutine:    true,
 			expectReliable: false,
-			tries:          100,
-			retries:        100,
 			selecter:       nestedSelect,
 			runner:         submitFirst,
+			tries:          100,
+			retries:        100,
 		},
 		// This one is kinda the nail in the coffin for nested selects.
 		//
@@ -103,10 +103,10 @@ func TestCancelStructuresUnreliableAcrossGoroutines(t *testing.T) {
 			name:           "Nested cancel is unreliable, even when canceling first",
 			inGoroutine:    true,
 			expectReliable: false,
-			tries:          100,
-			retries:        100,
 			selecter:       nestedSelect,
 			runner:         cancelFirst,
+			tries:          100,
+			retries:        100,
 		},
 		// -----------------------------------------------------------
 		// Even on a single thread, single-level select is unreliable.
@@ -116,19 +116,19 @@ func TestCancelStructuresUnreliableAcrossGoroutines(t *testing.T) {
 			name:           "Single-threaded single-level cancel is unreliable",
 			inGoroutine:    false,
 			expectReliable: false,
-			tries:          10,
-			retries:        10,
 			selecter:       singleLevelSelect,
 			runner:         submitFirst,
+			tries:          10,
+			retries:        10,
 		},
 		{
 			name:           "Single-threaded single-level cancel is unreliable, even when canceling first",
 			inGoroutine:    false,
 			expectReliable: false,
-			tries:          10,
-			retries:        10,
 			selecter:       singleLevelSelect,
 			runner:         cancelFirst,
+			tries:          10,
+			retries:        10,
 		},
 		// ===================================================================
 		// This is the ONLY reliable construct + use, but unfortunately single-
@@ -142,19 +142,19 @@ func TestCancelStructuresUnreliableAcrossGoroutines(t *testing.T) {
 			name:           "Single-threaded nested cancel is reliable, though unrealistic",
 			inGoroutine:    false,
 			expectReliable: true,
-			tries:          10,
-			retries:        100,
 			selecter:       nestedSelect,
 			runner:         submitFirst,
+			tries:          10,
+			retries:        100,
 		},
 		{
 			name:           "Single-threaded nested cancel is reliable, though unrealistic",
 			inGoroutine:    false,
 			expectReliable: true,
-			tries:          10,
-			retries:        100,
 			selecter:       nestedSelect,
 			runner:         cancelFirst,
+			tries:          10,
+			retries:        100,
 		},
 	}
 	for _, tmp := range tests {
@@ -191,13 +191,13 @@ func TestCancelStructuresUnreliableAcrossGoroutines(t *testing.T) {
 					canceled += 1
 				}
 			}, func() bool {
-				// stop once we've shown both are possible
+				// stop once we've shown both are possible (or when retries are exhausted)
 				return didWork != 0 && canceled != 0
 			})
 
 			if test.expectReliable {
 				a.Equal(0, didWork, "Should never pull from jobs")
-				a.NotEqual(0, canceled, "Should pull from Done sometimes")
+				a.NotEqual(0, canceled, "Should always pull from Done")
 			} else {
 				a.NotEqual(0, didWork, "Should pull from jobs sometimes")
 				a.NotEqual(0, canceled, "Should pull from Done sometimes")
