@@ -139,7 +139,7 @@ func TestCancelStructuresUnreliableAcrossGoroutines(t *testing.T) {
 		// require too many.
 		// ===================================================================
 		{
-			name:           "Single-threaded nested cancel is reliable, though unrealistic",
+			name:           "Single-threaded nested cancel is reliable, even when submitting first, though unrealistic",
 			inGoroutine:    false,
 			expectReliable: true,
 			selecter:       nestedSelect,
